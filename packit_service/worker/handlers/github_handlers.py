@@ -218,6 +218,8 @@ class AbstractCoprBuildHandler(JobHandler):
         return self._copr_build_helper
 
     def run(self) -> TaskResults:
+        if self.copr_build_helper.metadata.pr_id is None:
+            raise PackitException("pr_id is not set when it should be")
         return self.copr_build_helper.run_copr_build()
 
     def pre_check(self) -> bool:

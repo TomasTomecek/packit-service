@@ -32,6 +32,7 @@ from typing import Optional, List, Union, Dict, Set
 from ogr.abstract import GitProject
 from ogr.services.pagure import PagureProject
 from packit.config import PackageConfig, get_package_config_from_repo
+from packit.exceptions import PackitException
 
 from packit_service.config import (
     ServiceConfig,
@@ -520,7 +521,7 @@ class PullRequestGithubEvent(AddPullRequestDbTrigger, AbstractGithubEvent):
         commit_sha: str,
         user_login: str,
     ):
-        super().__init__(
+        super(AbstractGithubEvent, self).__init__(
             trigger=TheJobTriggerType.pull_request, project_url=https_url, pr_id=pr_id
         )
         self.action = action
@@ -533,6 +534,9 @@ class PullRequestGithubEvent(AddPullRequestDbTrigger, AbstractGithubEvent):
         self.user_login = user_login
         self.identifier = str(pr_id)
         self.git_ref = None  # pr_id will be used for checkout
+
+        if self.pr_id is None:
+            raise PackitException("pr_id is not set when it should be")
 
     def get_dict(self, default_dict: Optional[Dict] = None) -> dict:
         result = super().get_dict()

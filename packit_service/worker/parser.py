@@ -599,7 +599,7 @@ class Parser:
         if not nested_get(event, "issue", "pull_request"):
             return None
 
-        pr_id = nested_get(event, "issue", "number")
+        pr_id = event["issue"]["number"]
         action = event.get("action")
         if action not in {"created", "edited"} or not pr_id:
             return None

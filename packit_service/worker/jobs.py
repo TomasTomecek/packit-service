@@ -357,10 +357,6 @@ class SteveJobs:
         ):
             handler_kls = PagurePullRequestCommentCoprBuildHandler
 
-        jobs = get_config_for_handler_kls(
-            handler_kls=handler_kls, event=event, package_config=event.package_config,
-        )
-
         signatures = [handler_kls.get_signature(event=event, job=job) for job in jobs]
         # https://docs.celeryproject.org/en/stable/userguide/canvas.html#groups
         group(signatures).apply_async()
