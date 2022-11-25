@@ -663,19 +663,21 @@ class SteveJobs:
             number_of_build_targets: Number of build targets in case of CoprBuildHandler.
         """
         pushgateway = Pushgateway()
-        response_time = elapsed_seconds(
-            begin=self.event.created_at, end=task_accepted_time
-        )
-        logger.debug(f"Reporting initial status time: {response_time} seconds.")
-        pushgateway.initial_status_time.observe(response_time)
-        if response_time > 15:
-            pushgateway.no_status_after_15_s.inc()
-            # https://github.com/packit/packit-service/issues/1728
-            # we need more info why this has happened
-            logger.debug(f"Event dict: {self.event}.")
-            logger.error(
-                f"Event {self.event.__class__.__name__} took ({response_time}s) to process."
+        if not self.event.initial_metrics_reported:
+            response_time = elapsed_seconds(
+                begin=self.event.created_at, end=task_accepted_time
             )
+            logger.debug(f"Reporting initial status time: {response_time} seconds.")
+            pushgateway.initial_status_time.observe(response_time)
+            if response_time > 15:
+                pushgateway.no_status_after_15_s.inc()
+                # https://github.com/packit/packit-service/issues/1728
+                # we need more info why this has happened
+                logger.debug(f"Event dict: {self.event}.")
+                logger.error(
+                    f"Event {self.event.__class__.__name__} took ({response_time}s) to process."
+                )
+            self.event.initial_metrics_reported = True
 
         # set the time when the accepted status was set so that we can use it later for measurements
         self.event.task_accepted_time = task_accepted_time

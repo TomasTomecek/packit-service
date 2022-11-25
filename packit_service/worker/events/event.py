@@ -247,6 +247,8 @@ class Event:
                 self.created_at = datetime.fromisoformat(created_at)
         else:
             self.created_at = datetime.now(timezone.utc)
+        # set to True once the initial status metric was reported to pushgateway
+        self.initial_metrics_reported: bool = False
 
         # lazy properties:
         self._db_trigger: Optional[AbstractTriggerDbType] = None

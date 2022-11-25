@@ -6,19 +6,21 @@ Let's test that Steve's as awesome as we think he is.
 """
 import json
 import shutil
+from datetime import datetime
 from json import dumps, load
 
 import pytest
 from celery.canvas import Signature
 from flexmock import flexmock
 from github import Github
-
 from ogr.services.github import GithubProject
 from ogr.services.pagure import PagureProject
 from packit.api import PackitAPI
 from packit.config import JobConfigTriggerType
 from packit.distgit import DistGit
 from packit.local_project import LocalProject
+from prometheus_client import Counter
+
 from packit_service.config import ServiceConfig
 from packit_service.constants import TASK_ACCEPTED
 from packit_service.models import (
@@ -33,6 +35,7 @@ from packit_service.models import (
 from packit_service.service.db_triggers import AddReleaseDbTrigger
 from packit_service.service.urls import get_propose_downstream_info_url
 from packit_service.worker.allowlist import Allowlist
+from packit_service.worker.handlers import CoprBuildHandler
 from packit_service.worker.helpers.propose_downstream import ProposeDownstreamJobHelper
 from packit_service.worker.jobs import SteveJobs
 from packit_service.worker.monitoring import Pushgateway
@@ -223,3 +226,14 @@ def test_ignore_delete_branch(github_push):
     processing_results = SteveJobs().process_message(github_push)
 
     assert processing_results == []
+
+
+def test_push_initial_metrics(github_pr_event):
+    """test initial status reporting is done only the first target for an event"""
+    # 5 = 1 initial inc(), 2 + 2 copr build inc()s
+    flexmock(Counter).should_receive("inc").times(5)
+    flexmock(Pushgateway).should_receive("push").times(2)
+    SteveJobs(github_pr_event).push_initial_metrics(datetime.now(), CoprBuildHandler, 2)
+    # initial metrics were reported, we are not reporting them for the rest of the chroots
+    # but build number increases are being reported here
+    SteveJobs(github_pr_event).push_initial_metrics(datetime.now(), CoprBuildHandler, 2)
